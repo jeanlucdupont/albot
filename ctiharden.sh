@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Ubuntu "CTI Edition" hardening (workstation, dedicated network)
+# Ubuntu "CTI Edition" hardening 
 # Purpose: safe(r) passive collection via Tor Browser + torsocks, minimal traces.
 
 # ---- Helpers ----
