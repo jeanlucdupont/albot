@@ -1,7 +1,4 @@
-# Analysis of a Malicious PowerShell Script with GPT 5
-
-
-**Date:** 2025-08-09
+# Analysis of a Malicious PowerShell Script with GPT 5 (2025-08-09)
 
 ---
 ### User
