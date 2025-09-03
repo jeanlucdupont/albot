@@ -1,4 +1,5 @@
-flowchart TD
+```mermaid
+    flowchart TD
     A[Start: What do you need most?] --> B{Latency & runtime needs}
     B -->|Ultra-low latency\nLong or steady runtime| VMs[Virtual Machines]
     B -->|Low to medium latency\nShort/episodic runtime| C{Compliance & control}
