@@ -10,6 +10,7 @@ import math
 import re
 import numpy as np
 import random
+import textwrap
 import matplotlib.pyplot as plt
 from matplotlib import animation
 
@@ -58,7 +59,6 @@ def make_diamond(israndom=False):
     return X, edges
 
 def make_rectangle(w=1.6, h=1.0, israndom=False):
-    print("here")
     if israndom:
         X = np.array([[-w/2,  y0 + random.uniform(0, h)],
                       [ w/2,  y0 + random.uniform(0, h)],
@@ -105,7 +105,6 @@ def make_grid(rows=4, cols=4, spacing=0.7):
 
 def parse_shape(spec, israndom):
     s = spec.strip().lower()
-    print(s)
     if s == "square":
         return make_square(israndom)
     if s == "diamond":
@@ -296,7 +295,6 @@ def ground_forces_multi(X, V, primitives):
     return F
 
 def simulate(X, edges, primitives, springforce, stiffness, mass):
-    print(springforce)
     V = np.zeros_like(X)
     rest = build_springs(X, edges)
     c_spring = stiffness * 2.0 * math.sqrt(springforce * (mass/2.0))
@@ -336,7 +334,7 @@ def draw_obstacles(ax, primitives, xmin, xmax, ymin, ymax):
             ax.plot(cx + R*np.cos(theta), cy + R*np.sin(theta), linewidth=2)
 
 
-def animate_frames(frames, edges, primitives):
+def animate_frames(frames, edges, primitives, title):
     fig, ax = plt.subplots(figsize=(6,6))
     ax.set_aspect('equal', adjustable='box')
     xmin = np.min(frames[:,:,0]) - 1.0; xmax = np.max(frames[:,:,0]) + 1.0
@@ -344,7 +342,7 @@ def animate_frames(frames, edges, primitives):
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
     ax.set_xlabel("x (m)"); ax.set_ylabel("y (m)")
-    ax.set_title("Mass-spring body with multiple obstacles")
+    ax.set_title(title)
 
     draw_obstacles(ax, primitives, xmin, xmax, ymin, ymax)
 
@@ -389,13 +387,19 @@ def main():
     parser.add_argument("--stiffness", type=float, default=0.18, help="The higher, the stiffer")
     parser.add_argument("--mass", type=float, default=0.5, help="Mass in kg")
 
+  
     args = parser.parse_args()
+    args_dict = vars(args)
+    params = " ".join(f"{k}={v}" for k, v in args_dict.items() if v is not None)
+    params = textwrap.wrap(params, width=len(params)//3 + 1)
+    params = "\n".join(params)    
+
     X, edges = parse_shape(args.shape, args.random)
     primitives = []
     primitives += parse_ground(args.ground)
     primitives += parse_obstacles(args.obstacles)
     frames = simulate(X, edges, primitives, args.springforce, args.stiffness, args.mass)
-    animate_frames(frames, edges, primitives)
+    animate_frames(frames, edges, primitives, params)
 
 if __name__ == "__main__":
     main()
