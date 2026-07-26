@@ -1,0 +1,420 @@
+// ==UserScript==
+// @name         ChatGPT Sensitive Data Guard (PoC)
+// @namespace    local.chatgpt.sensitive-data-guard
+// @version      0.2.0
+// @description  Warns before sensitive data is submitted to ChatGPT. All analysis is local.
+// @match        https://chat.openai.com/*
+// @match        https://chatgpt.com/*
+// @grant        none
+// @run-at       document-start
+// ==/UserScript==
+
+(() => {
+  'use strict';
+
+  const MODAL_HOST_ID = 'vm-sensitive-data-guard';
+  const SEND_BUTTON_SELECTORS = [
+    'button[data-testid="send-button"]',
+    'button[data-testid="composer-submit-button"]',
+    'button[id="composer-submit-button"]',
+    'button[data-testid*="send"]',
+    'button[aria-label="Send prompt"]',
+    'button[aria-label="Send message"]',
+    'button[aria-label^="Send"]',
+    'button[type="submit"]',
+  ];
+
+  let dialogOpen = false;
+  let oneTimeAuthorization = null;
+
+  document.documentElement.setAttribute('data-sensitive-data-guard', 'active');
+  console.info('[Sensitive Data Guard] Active on', location.origin);
+
+  function normalizedCardDigits(candidate) {
+    return candidate.replace(/[ -]/g, '');
+  }
+
+  function passesLuhn(digits) {
+    let sum = 0;
+    let doubleDigit = false;
+
+    for (let index = digits.length - 1; index >= 0; index -= 1) {
+      let digit = Number(digits[index]);
+      if (doubleDigit) {
+        digit *= 2;
+        if (digit > 9) digit -= 9;
+      }
+      sum += digit;
+      doubleDigit = !doubleDigit;
+    }
+
+    return sum % 10 === 0;
+  }
+
+  function isVisaOrMastercard(digits) {
+    if (!/^\d{16}$/.test(digits)) return false;
+    if (digits.startsWith('4')) return true;
+
+    const firstTwo = Number(digits.slice(0, 2));
+    const firstFour = Number(digits.slice(0, 4));
+    return (firstTwo >= 51 && firstTwo <= 55)
+      || (firstFour >= 2221 && firstFour <= 2720);
+  }
+
+  function hasValidPaymentCard(text) {
+    // Exactly 16 digits, optionally grouped with spaces or hyphens.
+    const candidates = text.match(/(?<!\d)(?:\d[ -]?){15}\d(?!\d)/g) || [];
+    return candidates.some((candidate) => {
+      const digits = normalizedCardDigits(candidate);
+      return isVisaOrMastercard(digits) && passesLuhn(digits);
+    });
+  }
+
+  function detectSensitiveData(text) {
+    const findings = [];
+
+    if (hasValidPaymentCard(text)) {
+      findings.push({
+        category: 'Payment card',
+        detail: 'A valid 16-digit Visa or Mastercard number was detected.',
+      });
+    }
+
+    if (/(^|[^A-Za-z0-9_])sk-[A-Za-z0-9_-]*/i.test(text)) {
+      findings.push({
+        category: 'OpenAI API key',
+        detail: 'Text beginning with the OpenAI key prefix “sk-” was detected.',
+      });
+    }
+
+    if (/-----BEGIN (?:[A-Z0-9][A-Z0-9 -]* )?PRIVATE KEY-----/i.test(text)) {
+      findings.push({
+        category: 'Private key',
+        detail: 'A PEM private-key header was detected.',
+      });
+    }
+
+    if (/-----BEGIN CERTIFICATE-----/i.test(text)) {
+      findings.push({
+        category: 'Certificate',
+        detail: 'A PEM certificate header was detected.',
+      });
+    }
+
+    return findings;
+  }
+
+  function promptElementFrom(node) {
+    if (!(node instanceof Element)) return null;
+
+    const editable = node.matches('textarea, [contenteditable]:not([contenteditable="false"])')
+      ? node
+      : node.closest('textarea, [contenteditable]:not([contenteditable="false"])');
+
+    if (!editable) return null;
+    if (editable.id === 'prompt-textarea') return editable;
+    if (editable.matches('[data-testid="composer-input"], .ProseMirror')) return editable;
+    if (editable.matches('textarea[name="prompt"], textarea[placeholder]')) return editable;
+    if (editable.closest('form')) return editable;
+    return null;
+  }
+
+  function promptElementFromEvent(event) {
+    for (const node of event.composedPath()) {
+      const promptElement = promptElementFrom(node);
+      if (promptElement) return promptElement;
+    }
+    return promptElementFrom(event.target);
+  }
+
+  function promptText(promptElement) {
+    if (promptElement instanceof HTMLTextAreaElement) return promptElement.value;
+    return promptElement.innerText || promptElement.textContent || '';
+  }
+
+  function findPromptNear(node) {
+    if (node instanceof Element) {
+      const form = node.closest('form');
+      const inForm = form?.querySelector('#prompt-textarea, [data-testid="composer-input"], .ProseMirror[contenteditable], textarea[name="prompt"], textarea, [contenteditable]:not([contenteditable="false"])');
+      if (inForm) return promptElementFrom(inForm);
+    }
+
+    return promptElementFrom(document.querySelector('#prompt-textarea'))
+      || promptElementFrom(document.querySelector('[data-testid="composer-input"]'))
+      || promptElementFrom(document.querySelector('.ProseMirror[contenteditable]'))
+      || promptElementFrom(document.querySelector('form textarea[name="prompt"]'))
+      || promptElementFrom(document.querySelector('form [contenteditable]:not([contenteditable="false"])'));
+  }
+
+  function findSendButton(promptElement) {
+    const form = promptElement?.closest('form');
+    for (const selector of SEND_BUTTON_SELECTORS) {
+      const button = form?.querySelector(selector) || document.querySelector(selector);
+      if (button instanceof HTMLButtonElement && !button.disabled) return button;
+    }
+    return null;
+  }
+
+  function isSendButton(node) {
+    if (!(node instanceof Element)) return false;
+    const button = node.closest('button');
+    if (!(button instanceof HTMLButtonElement)) return false;
+
+    if (SEND_BUTTON_SELECTORS.some((selector) => button.matches(selector))) {
+      return Boolean(findPromptNear(button));
+    }
+    return false;
+  }
+
+  // This non-cryptographic fingerprint avoids retaining the prompt itself.
+  function fingerprint(text) {
+    let hash = 0x811c9dc5;
+    for (let index = 0; index < text.length; index += 1) {
+      hash ^= text.charCodeAt(index);
+      hash = Math.imul(hash, 0x01000193);
+    }
+    return `${text.length}:${hash >>> 0}`;
+  }
+
+  function authorizeOnce(text) {
+    oneTimeAuthorization = {
+      fingerprint: fingerprint(text),
+      expiresAt: Date.now() + 10_000,
+    };
+  }
+
+  function consumeAuthorization(text) {
+    const authorization = oneTimeAuthorization;
+    const authorized = Boolean(
+      authorization
+      && authorization.expiresAt >= Date.now()
+      && authorization.fingerprint === fingerprint(text)
+    );
+    if (!authorized) {
+      oneTimeAuthorization = null;
+      return false;
+    }
+
+    // A single user submission may synchronously produce both click and submit
+    // events. Permit that event chain, then expire before the next browser task.
+    if (!authorization.consumed) {
+      authorization.consumed = true;
+      setTimeout(() => {
+        if (oneTimeAuthorization === authorization) oneTimeAuthorization = null;
+      }, 0);
+    }
+    return true;
+  }
+
+  function injectDialogStyles(shadowRoot) {
+    const style = document.createElement('style');
+    style.textContent = `
+      :host { all: initial; }
+      *, *::before, *::after { box-sizing: border-box; }
+      .backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: rgba(15, 23, 42, 0.62);
+        backdrop-filter: blur(3px);
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #172033;
+      }
+      .dialog {
+        width: min(520px, 100%);
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.45);
+        border-radius: 18px;
+        background: #ffffff;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+      }
+      .header { display: flex; gap: 14px; padding: 24px 24px 17px; }
+      .icon {
+        display: grid;
+        flex: 0 0 42px;
+        height: 42px;
+        place-items: center;
+        border-radius: 12px;
+        background: #fff7ed;
+        color: #c2410c;
+        font: 700 22px/1 ui-sans-serif, system-ui, sans-serif;
+      }
+      h2 { margin: 0 0 5px; font-size: 19px; line-height: 1.3; }
+      .intro { margin: 0; color: #526077; font-size: 14px; line-height: 1.5; }
+      .findings { display: grid; gap: 9px; margin: 0 24px 20px; }
+      .finding {
+        padding: 12px 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 11px;
+        background: #f8fafc;
+      }
+      .category { display: block; margin-bottom: 2px; font-size: 14px; font-weight: 700; }
+      .detail { color: #5f6c80; font-size: 13px; line-height: 1.45; }
+      .privacy {
+        margin: 0 24px 22px;
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 16px 24px;
+        border-top: 1px solid #e8edf3;
+        background: #fbfcfe;
+      }
+      button {
+        min-height: 40px;
+        padding: 0 16px;
+        border-radius: 10px;
+        font: 650 14px/1 ui-sans-serif, system-ui, sans-serif;
+        cursor: pointer;
+      }
+      .review { border: 1px solid #cbd5e1; background: #ffffff; color: #243044; }
+      .review:hover { background: #f8fafc; }
+      .send { border: 1px solid #b42318; background: #b42318; color: #ffffff; }
+      .send:hover { background: #912018; }
+      button:focus-visible { outline: 3px solid rgba(37, 99, 235, 0.28); outline-offset: 2px; }
+    `;
+    shadowRoot.append(style);
+  }
+
+  function showWarning(findings, promptElement, onSendAnyway) {
+    if (dialogOpen) return;
+    dialogOpen = true;
+
+    const host = document.createElement('div');
+    host.id = MODAL_HOST_ID;
+    const shadow = host.attachShadow({ mode: 'closed' });
+    injectDialogStyles(shadow);
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'backdrop';
+    backdrop.setAttribute('role', 'presentation');
+
+    const dialog = document.createElement('section');
+    dialog.className = 'dialog';
+    dialog.setAttribute('role', 'alertdialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-labelledby', 'sdg-title');
+    dialog.setAttribute('aria-describedby', 'sdg-description');
+
+    const findingsMarkup = findings.map(({ category, detail }) => `
+      <div class="finding">
+        <span class="category"></span>
+        <span class="detail"></span>
+      </div>
+    `).join('');
+
+    dialog.innerHTML = `
+      <div class="header">
+        <div class="icon" aria-hidden="true">!</div>
+        <div>
+          <h2 id="sdg-title">Sensitive information detected</h2>
+          <p class="intro" id="sdg-description">This prompt appears to contain information you may not want to share.</p>
+        </div>
+      </div>
+      <div class="findings">${findingsMarkup}</div>
+      <p class="privacy">Detection happened locally in your browser. No prompt content was transmitted by this userscript.</p>
+      <div class="actions">
+        <button class="review" type="button">Review prompt</button>
+        <button class="send" type="button">Send anyway</button>
+      </div>
+    `;
+
+    dialog.querySelectorAll('.finding').forEach((findingElement, index) => {
+      findingElement.querySelector('.category').textContent = findings[index].category;
+      findingElement.querySelector('.detail').textContent = findings[index].detail;
+    });
+
+    backdrop.append(dialog);
+    shadow.append(backdrop);
+    (document.body || document.documentElement).append(host);
+
+    const close = () => {
+      host.remove();
+      dialogOpen = false;
+      promptElement.focus();
+    };
+
+    dialog.querySelector('.review').addEventListener('click', close);
+    dialog.querySelector('.send').addEventListener('click', () => {
+      close();
+      onSendAnyway();
+    });
+
+    dialog.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        close();
+      }
+    });
+
+    dialog.querySelector('.review').focus();
+  }
+
+  function continueSubmission(promptElement, originalButton) {
+    const button = originalButton || findSendButton(promptElement);
+    if (button) {
+      button.click();
+      return;
+    }
+
+    const form = promptElement.closest('form');
+    if (form instanceof HTMLFormElement) form.requestSubmit();
+  }
+
+  function inspectSubmission(event, promptElement, originalButton = null, method = 'unknown') {
+    const text = promptText(promptElement);
+    const findings = detectSensitiveData(text);
+    console.info('[Sensitive Data Guard] Submission observed', {
+      method,
+      promptLength: text.length,
+      findings: findings.map((finding) => finding.category),
+    });
+    if (findings.length === 0 || consumeAuthorization(text)) return false;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    showWarning(findings, promptElement, () => {
+      const currentText = promptText(promptElement);
+      authorizeOnce(currentText);
+      continueSubmission(promptElement, originalButton);
+    });
+    return true;
+  }
+
+  window.addEventListener('keydown', (event) => {
+    if (event.defaultPrevented || event.isComposing || event.key !== 'Enter' || event.shiftKey) return;
+    if (!(event.target instanceof Element)) return;
+
+    const promptElement = promptElementFromEvent(event);
+    if (!promptElement) return;
+
+    inspectSubmission(event, promptElement, null, 'keyboard');
+  }, true);
+
+  window.addEventListener('click', (event) => {
+    if (event.defaultPrevented || !(event.target instanceof Element) || !isSendButton(event.target)) return;
+
+    const button = event.target.closest('button');
+    const promptElement = findPromptNear(button);
+    if (!promptElement) return;
+
+    inspectSubmission(event, promptElement, button, 'click');
+  }, true);
+
+  window.addEventListener('submit', (event) => {
+    if (event.defaultPrevented || !(event.target instanceof HTMLFormElement)) return;
+
+    const promptElement = findPromptNear(event.target);
+    if (!promptElement) return;
+
+    inspectSubmission(event, promptElement, null, 'form');
+  }, true);
+})();
