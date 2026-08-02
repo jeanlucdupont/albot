@@ -1,1 +1,285 @@
-tbd
+// ==UserScript==
+// @name         Privacy Score
+// @namespace    https://local.invalid/privacy-label
+// @version      260730
+// @description  Adds a live, evidence-based privacyscore to websites.
+// @match        http://*/*
+// @match        https://*/*
+// @run-at       document-start
+// @grant        unsafeWindow
+// ==/UserScript==
+
+(() => {
+  'use strict';
+
+  const PAGE = typeof unsafeWindow === 'object' ? unsafeWindow : window;
+  const COMMON_2LD = new Set([
+    'co.uk', 'org.uk', 'ac.uk', 'gov.uk', 'com.au', 'net.au', 'org.au',
+    'co.nz', 'co.jp', 'co.kr', 'com.br', 'com.mx', 'com.cn', 'com.sg',
+    'com.tr', 'co.in', 'co.za', 'com.ar', 'com.tw', 'com.hk'
+  ]);
+  const TRACKER_RULES = [
+    ['Google Analytics', /(^|\.)google-analytics\.com$|(^|\.)googletagmanager\.com$/],
+    ['Google Ads', /(^|\.)doubleclick\.net$|(^|\.)googleadservices\.com$|(^|\.)googlesyndication\.com$/],
+    ['Meta Pixel', /(^|\.)connect\.facebook\.net$|(^|\.)facebook\.com$/],
+    ['Microsoft Clarity', /(^|\.)clarity\.ms$|(^|\.)clarity\.microsoft\.com$/],
+    ['Hotjar', /(^|\.)hotjar\.com$|(^|\.)hotjar\.io$/],
+    ['Adobe Analytics', /(^|\.)omtrdc\.net$|(^|\.)demdex\.net$/],
+    ['TikTok Pixel', /(^|\.)analytics\.tiktok\.com$|(^|\.)tiktok\.com$/],
+    ['LinkedIn Insight', /(^|\.)snap\.licdn\.com$|(^|\.)linkedin\.com$/],
+    ['X / Twitter', /(^|\.)ads-twitter\.com$|(^|\.)analytics\.twitter\.com$/],
+    ['Segment', /(^|\.)segment\.com$|(^|\.)segment\.io$/],
+    ['Amplitude', /(^|\.)amplitude\.com$/],
+    ['Mixpanel', /(^|\.)mixpanel\.com$/],
+    ['FullStory', /(^|\.)fullstory\.com$/],
+    ['Sentry', /(^|\.)sentry\.io$/],
+    ['New Relic', /(^|\.)newrelic\.com$|(^|\.)nr-data\.net$/],
+    ['Criteo', /(^|\.)criteo\.com$|(^|\.)criteo\.net$/],
+    ['Taboola', /(^|\.)taboola\.com$/],
+    ['Outbrain', /(^|\.)outbrain\.com$/]
+  ];
+  const PII_RULES = [
+    ['Email address', /\b(e-?mail)\b/i],
+    ['Phone number', /\b(phone|mobile|telephone|tel)\b/i],
+    ['Full name', /\b(full.?name|first.?name|last.?name|surname|given.?name)\b/i],
+    ['Street address', /\b(address|street|city|state|province|postal|zip)\b/i],
+    ['Date of birth', /\b(date.?of.?birth|birth.?date|birthday|dob)\b/i],
+    ['Government ID', /\b(ssn|social.?security|passport|driver.?s?.?licen[cs]e|national.?id)\b/i],
+    ['Payment details', /\b(card.?number|credit.?card|debit.?card|cvv|cvc|iban|bank.?account)\b/i],
+    ['Location', /\b(location|geolocation|latitude|longitude)\b/i],
+    ['Username', /\b(user.?name|login)\b/i],
+    ['Password', /\b(password|passcode|pin)\b/i]
+  ];
+
+  const state = {
+    domains: new Map(),
+    trackers: new Map(),
+    cookies: new Map(),
+    fingerprinting: new Map(),
+    pii: new Map(),
+    started: Date.now()
+  };
+  let panel, body, badge, expanded = false, renderQueued = false;
+
+  function baseDomain(hostname) {
+    const host = hostname.toLowerCase().replace(/\.$/, '');
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host === 'localhost') return host;
+    const parts = host.split('.');
+    if (parts.length <= 2) return host;
+    const last2 = parts.slice(-2).join('.');
+    return COMMON_2LD.has(last2) ? parts.slice(-3).join('.') : last2;
+  }
+
+  function thirdPartyHost(rawUrl, source = 'resource') {
+    try {
+      const url = new URL(rawUrl, location.href);
+      if (!/^https?:$/.test(url.protocol) || baseDomain(url.hostname) === baseDomain(location.hostname)) return;
+      if (!state.domains.has(url.hostname)) state.domains.set(url.hostname, new Set());
+      state.domains.get(url.hostname).add(source);
+      for (const [name, rule] of TRACKER_RULES) {
+        if (rule.test(url.hostname)) {
+          if (!state.trackers.has(name)) state.trackers.set(name, new Set());
+          state.trackers.get(name).add(url.hostname);
+        }
+      }
+      scheduleRender();
+    } catch (_) {}
+  }
+
+  function scanResources() {
+    try {
+      performance.getEntriesByType('resource').forEach(e => thirdPartyHost(e.name, e.initiatorType || 'resource'));
+    } catch (_) {}
+    document.querySelectorAll?.('[src],[href]').forEach(el => {
+      const raw = el.src || el.href;
+      if (raw) thirdPartyHost(raw, el.localName);
+    });
+  }
+
+  function scanCookies() {
+    let visible = '';
+    try { visible = document.cookie || ''; } catch (_) {}
+    const current = new Map();
+    visible.split(/;\s*/).filter(Boolean).forEach(pair => {
+      const i = pair.indexOf('=');
+      const name = decodeURIComponent(i < 0 ? pair : pair.slice(0, i));
+      current.set(name, i < 0 ? '' : pair.slice(i + 1));
+      if (!state.cookies.has(name)) {
+        state.cookies.set(name, { firstSeen: Date.now(), changed: 0 });
+      } else if (state.cookies.get(name)._value !== current.get(name)) {
+        state.cookies.get(name).changed++;
+      }
+      state.cookies.get(name)._value = current.get(name);
+    });
+    scheduleRender();
+  }
+
+  function fieldText(el) {
+    const label = el.labels ? [...el.labels].map(x => x.textContent).join(' ') : '';
+    return [
+      el.type, el.name, el.id, el.placeholder, el.autocomplete,
+      el.getAttribute('aria-label'), label
+    ].filter(Boolean).join(' ');
+  }
+
+  function scanPII() {
+    document.querySelectorAll?.('input, textarea, select').forEach(el => {
+      const text = fieldText(el);
+      for (const [kind, rule] of PII_RULES) {
+        if (rule.test(text)) {
+          if (!state.pii.has(kind)) state.pii.set(kind, new Set());
+          state.pii.get(kind).add(el.name || el.id || el.type || el.localName);
+        }
+      }
+    });
+    scheduleRender();
+  }
+
+  function recordFingerprint(api) {
+    const item = state.fingerprinting.get(api) || { calls: 0, firstSeen: Date.now() };
+    item.calls++;
+    state.fingerprinting.set(api, item);
+    scheduleRender();
+  }
+
+  function wrap(proto, method, label) {
+    try {
+      const original = proto?.[method];
+      if (typeof original !== 'function' || original.__privacyLabelWrapped) return;
+      const wrapped = function (...args) {
+        recordFingerprint(label);
+        return Reflect.apply(original, this, args);
+      };
+      Object.defineProperty(wrapped, '__privacyLabelWrapped', { value: true });
+      Object.defineProperty(proto, method, { ...Object.getOwnPropertyDescriptor(proto, method), value: wrapped });
+    } catch (_) {}
+  }
+
+  function installFingerprintHooks() {
+    wrap(PAGE.HTMLCanvasElement?.prototype, 'toDataURL', 'Canvas image read');
+    wrap(PAGE.HTMLCanvasElement?.prototype, 'toBlob', 'Canvas image read');
+    wrap(PAGE.CanvasRenderingContext2D?.prototype, 'getImageData', 'Canvas pixel read');
+    wrap(PAGE.WebGLRenderingContext?.prototype, 'readPixels', 'WebGL pixel read');
+    wrap(PAGE.WebGL2RenderingContext?.prototype, 'readPixels', 'WebGL2 pixel read');
+    wrap(PAGE.WebGLRenderingContext?.prototype, 'getParameter', 'WebGL device query');
+    wrap(PAGE.WebGL2RenderingContext?.prototype, 'getParameter', 'WebGL2 device query');
+    wrap(PAGE.OfflineAudioContext?.prototype, 'startRendering', 'Audio fingerprint render');
+    wrap(PAGE.AudioBuffer?.prototype, 'getChannelData', 'Audio buffer read');
+    wrap(PAGE.Navigator?.prototype, 'getBattery', 'Battery status query');
+    wrap(PAGE.MediaDevices?.prototype, 'enumerateDevices', 'Media device enumeration');
+  }
+
+  function esc(value) {
+    return String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  function rows(title, entries, empty = 'None detected') {
+    const list = entries.length
+      ? `<ul>${entries.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`
+      : `<p class="pnl-muted">${empty}</p>`;
+    return `<section><h3>${esc(title)}</h3>${list}</section>`;
+  }
+
+  function grade() {
+    const score = state.trackers.size * 3 + state.domains.size +
+      state.cookies.size + state.fingerprinting.size * 4 + state.pii.size * 2;
+    if (score === 0) return ['A', '#16865b'];
+    if (score < 25) return ['B', '#4c8c2b'];
+    if (score < 50) return ['C', '#b27b00'];
+    if (score < 75) return ['D', '#c45100'];
+    //return [score, '#b42318'];
+    return ['F', '#b42318'];
+  }
+
+  function render() {
+    renderQueued = false;
+    if (!panel) return;
+    const [letter, color] = grade();
+    badge.textContent = letter;
+    badge.style.background = color;
+    panel.querySelector('.pnl-summary').innerHTML =
+      `<br> TRK <b>${state.trackers.size}</b> | FGP <b>${state.fingerprinting.size}</b> | 3PD <b>${state.domains.size}</b> | CKI <b>${state.cookies.size}</b> | PII <b>${state.pii.size}</b>`;
+    body.hidden = !expanded;
+    if (!expanded) return;
+    const trackers = [...state.trackers].map(([name, hosts]) => `${name} — ${[...hosts].join(', ')}`);
+    const domains = [...state.domains].sort().map(([host, types]) => `${host} — ${[...types].join(', ')}`);
+    const cookies = [...state.cookies].map(([name, data]) => `${name}${data.changed ? ` — changed ${data.changed}×` : ''}`);
+    const fp = [...state.fingerprinting].map(([name, data]) => `${name} — ${data.calls} call${data.calls === 1 ? '' : 's'}`);
+    const pii = [...state.pii].map(([kind, fields]) => `${kind} — ${fields.size} field${fields.size === 1 ? '' : 's'}`);
+    body.innerHTML =
+      rows(`Trackers (${trackers.length})`, trackers) +
+      rows(`Fingerprinting signals (${fp.length})`, fp, 'No hooked fingerprinting APIs called yet') +
+      rows(`Third-party domains (${domains.length})`, domains) +
+      rows(`Visible cookies (${cookies.length})`, cookies, 'No script-readable cookies detected') +
+      rows(`Personal information requested (${pii.length})`, pii, 'No matching form fields detected') +
+      `<div class="pnl-foot">Get the original code <a href="https://github.com/jeanlucdupont/albot/blob/main/violentmonkey-privacy-score.txt">here</a> (JL Dupont)</div>`;
+  }
+
+  function scheduleRender() {
+    if (!renderQueued) {
+      renderQueued = true;
+      setTimeout(render, 100);
+    }
+  }
+
+  function mount() {
+    if (!document.documentElement || panel) return;
+    const host = document.createElement('div');
+    host.id = 'privacy-nutrition-label-host';
+    host.style.cssText = 'all:initial;position:fixed;right:14px;bottom:14px;z-index:2147483647';
+    const root = host.attachShadow({ mode: 'open' });
+    root.innerHTML = `
+      <style>
+        *{box-sizing:border-box}button{font:inherit}
+        .pnl{width:min(360px,calc(100vw - 28px));color:#17211b;background:#fffdf7;border:1px solid #c9c4b8;
+          border-radius:14px;box-shadow:0 10px 30px #0003;font:13px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;overflow:hidden}
+        .pnl-head{width:100%;display:grid;grid-template-columns:42px 1fr 18px;gap:10px;align-items:center;padding:10px;
+          color:inherit;background:#f5f1e7;border:0;text-align:left;cursor:pointer}
+        .pnl-grade{display:grid;place-items:center;width:38px;height:38px;border-radius:9px;color:white;font:bold 23px/1 system-ui}
+        .pnl-title{font-weight:750;font-size:14px}.pnl-summary{font-size:11px;color:#5d625e;margin-top:1px}
+        .pnl-chevron{font-size:18px}.pnl-body{max-height:min(66vh,620px);overflow:auto;padding:5px 12px 12px}
+        section{padding:8px 0;border-bottom:1px solid #ebe7dc}h3{font-size:12px;margin:0 0 5px}
+        ul{margin:0;padding-left:18px}li{overflow-wrap:anywhere;margin:2px 0}.pnl-muted{margin:0;color:#747875}
+        .pnl-note,.pnl-foot{font-size:10.5px;color:#656a66}.pnl-note{padding:8px 0 2px}.pnl-foot{padding-top:10px}
+      </style>
+      <aside class="pnl" aria-label="Privacy Score">
+        <button class="pnl-head" type="button" aria-expanded="false">
+          <span class="pnl-grade">A</span>
+          <span><span class="pnl-title">Privacy Score</span><span class="pnl-summary">Scanning…</span></span>
+          <span class="pnl-chevron">⌃</span>
+        </button>
+        <div class="pnl-body" hidden></div>
+      </aside>`;
+    panel = root.querySelector('.pnl');
+    body = root.querySelector('.pnl-body');
+    badge = root.querySelector('.pnl-grade');
+    root.querySelector('.pnl-head').addEventListener('click', e => {
+      expanded = !expanded;
+      e.currentTarget.setAttribute('aria-expanded', String(expanded));
+      root.querySelector('.pnl-chevron').textContent = expanded ? '⌄' : '⌃';
+      render();
+    });
+    document.documentElement.appendChild(host);
+    render();
+  }
+
+  installFingerprintHooks();
+  const start = () => {
+    mount();
+    scanResources();
+    scanCookies();
+    scanPII();
+    try {
+      new PerformanceObserver(list => {
+        list.getEntries().forEach(e => thirdPartyHost(e.name, e.initiatorType || 'resource'));
+      }).observe({ type: 'resource', buffered: true });
+    } catch (_) {}
+    new MutationObserver(() => {
+      scanResources();
+      scanPII();
+    }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'href', 'name', 'type', 'autocomplete'] });
+    setInterval(scanCookies, 2000);
+  };
+  if (document.documentElement) start();
+  else addEventListener('DOMContentLoaded', start, { once: true });
+})();
