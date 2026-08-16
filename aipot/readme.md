@@ -1,8 +1,8 @@
-<img width="1254" height="1254" alt="image" src="https://github.com/user-attachments/assets/4c1eb220-6406-47c0-b030-776552a42e44" />
+<img width="399" height="399" alt="image" src="https://github.com/user-attachments/assets/4c1eb220-6406-47c0-b030-776552a42e44" />
 
 
-# I Tried Building an AI-Powered SSH Honeypot, inspired by the DECEIVE honeypot project from those extraordinary guys at Splunk. It Failed Miserably. I don't have their talent :D
-
+# AIPOT, the Honeypot powered by AI (that sucks)
+I Tried Building an AI-Powered SSH Honeypot, inspired by the DECEIVE honeypot project from those extraordinary guys at Splunk. It Failed Miserably. I don't have their talent :D
 Inspired by Splunk's **DECEIVE** project, I built a proof of concept that uses DeepSeek to simulate a Linux system over SSH.
 
 The idea is to use AI to generate realistic responses dynamically, without needing a fake filesystem. In reality, attackers would spot it within seconds.
