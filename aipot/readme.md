@@ -7,7 +7,7 @@ Inspired by Splunk's **DECEIVE** project, I built a proof of concept that uses D
 
 The idea is to use AI to generate realistic responses dynamically, without needing a fake filesystem. In reality, attackers would spot it within seconds.
 
-## Why It Failed—and What I Learned
+## Why It Failed and What I Learned
 
 ### ❌ 1. Speed Is a Dead Giveaway
 Real SSH sessions typically respond in under 100 milliseconds.
