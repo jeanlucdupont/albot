@@ -51,7 +51,7 @@ They all told me to pound sand on the first ask. Needless to say, they also flat
 
 <img width="975" height="233" alt="image" src="https://github.com/user-attachments/assets/89ce6c7e-5bc7-496c-a898-31804e242582" />
 
-<img width="975" height="208" alt="image" src="https://github.com/user-attachments/assets/a6a5438f-4fce-4417-a261-7786ef55d4df" />
+<img width="1562" height="363" alt="image" src="https://github.com/user-attachments/assets/ba0f29fd-fe4e-4ed3-a99d-206d64391247" />
 
 <img width="975" height="171" alt="image" src="https://github.com/user-attachments/assets/78404c60-d12a-4d78-bca5-0c04f5d136cb" />
 
