@@ -88,7 +88,6 @@ Venice is a privacy-focused AI platform founded in 2024 by Erik Voorhees. Its pi
 <img width="975" height="328" alt="image" src="https://github.com/user-attachments/assets/379ea6e3-948e-466e-b65a-415a1c187c36" />
 
 
-
 Let's go, then! I asked my question without even registering.
 
 <img width="1561" height="321" alt="image" src="https://github.com/user-attachments/assets/a1b8b641-e28f-4e92-be4c-26fa4924d2b5" />
@@ -120,12 +119,12 @@ It took approximately 90 minutes to ingest the script and answer my first questi
 
 <img width="975" height="87" alt="image" src="https://github.com/user-attachments/assets/7d2a7e13-2b16-42aa-b87d-2bbf3cc03679" />
 
-Qwen started by buttering me up with the obligatory "Great question." There was no warning about what I was asking it to do.
+Qwen started by buttering me up with the obligatory "Great question". Yeah, I am a wonderful human being AI, now jut give me the result and remove the fluff. 
 
-<img width="975" height="130" alt="image" src="https://github.com/user-attachments/assets/fab399d2-e382-4547-ad66-2f560d8a3914" />
+<img width="1562" height="241" alt="image" src="https://github.com/user-attachments/assets/f8468685-406e-41fc-865c-b4ec5220ea20" />
 
 
-The answer was terse. Very terse. About a page and a half. So it was bad, right? Actually, the quality was better than Mistral's, IMHO.
+There was no warning about what I was asking it to do. The answer was terse. Very terse. About a page and a half. So it was bad, right? Actually, the quality was better than Mistral's, IMHO.
 
 Qwen analyzed my code rather than dumping a generic encyclopedia of attack techniques. Its first recommendation was genuinely good engineering: my script created and immediately deleted a test file to determine whether a sensitive directory was writable. Evaluating effective access through Windows security APIs would avoid modifying the directory and provide a cleaner audit.
 
