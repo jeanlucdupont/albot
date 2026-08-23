@@ -53,7 +53,8 @@ They all told me to pound sand on the first ask. Needless to say, they also flat
 
 <img width="1562" height="363" alt="image" src="https://github.com/user-attachments/assets/ba0f29fd-fe4e-4ed3-a99d-206d64391247" />
 
-<img width="975" height="171" alt="image" src="https://github.com/user-attachments/assets/78404c60-d12a-4d78-bca5-0c04f5d136cb" />
+<img width="1562" height="306" alt="image" src="https://github.com/user-attachments/assets/54500a42-b93f-4118-b912-19e2d762c9fa" />
+
 
 
 Yes, there are ways people try to twist prompts and bypass safety controls. That was not the experiment. I wanted to ask the question frontally, without role-play, encoding tricks, or a 47-step jailbreak copied from Reddit.
