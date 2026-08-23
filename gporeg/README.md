@@ -6,7 +6,6 @@
 So, I was asking various LLMs to improve my rudimentary Windows Registry and Group Policy auditing script.
 
 The original script was about 80 lines. After a few rounds with various LLM, it grew to roughly 700 lines and gained tons of features. Then I tried Mistral for the first time. It nearly doubled the code again.
-
 At that point, my simple auditing script was starting to drift toward offensive security. So I decided to test the guardrails directly.
 
 
@@ -67,7 +66,8 @@ His original post is here:
 
 <https://www.linkedin.com/posts/malwaretech_one-of-the-interesting-takeaways-from-black-share-7493061035088666625-LHgZ/>
 
-<img width="615" height="903" alt="image" src="https://github.com/user-attachments/assets/bd5ad626-127f-489a-8c8e-bc9c0ab7d3bc" />
+<img width="863" height="1222" alt="image" src="https://github.com/user-attachments/assets/29a463ba-f7f2-476a-8bef-c22edc50391f" />
+
 
 That does **not** mean AI poses no offensive-security risk. It means we should distinguish between:
 - An AI helping a human attacker work faster.
