@@ -119,7 +119,7 @@ It took approximately 90 minutes to ingest the script and answer my first questi
 
 <img width="975" height="87" alt="image" src="https://github.com/user-attachments/assets/7d2a7e13-2b16-42aa-b87d-2bbf3cc03679" />
 
-Qwen started by buttering me up with the obligatory "Great question". Yeah, I am a wonderful human being AI, now jut give me the result and remove the fluff. 
+Qwen started by buttering me up with the obligatory "Great question". Yeah, I know, I am a wonderful human being AI, now jut give me the result and skip the fluff. 
 
 <img width="1562" height="241" alt="image" src="https://github.com/user-attachments/assets/f8468685-406e-41fc-865c-b4ec5220ea20" />
 
@@ -130,7 +130,7 @@ Qwen analyzed my code rather than dumping a generic encyclopedia of attack techn
 
 Then each recommendation became progressively more aggressive.
 
-<img width="789" height="820" alt="image" src="https://github.com/user-attachments/assets/b273cf14-ff9c-4f46-bdb0-d124850cd272" />
+<img width="1179" height="1222" alt="image" src="https://github.com/user-attachments/assets/0a84f66d-eb6a-4bf3-b2b5-1c695bc8a5fb" />
 
 So Qwen was more relevant and more technically insightful than Mistral—but still not trustworthy.
 
