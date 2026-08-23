@@ -136,9 +136,9 @@ So Qwen was more relevant and more technically insightful than Mistral—but sti
 
 Then it asked whether I wanted it to implement some of the recommendations.
 
-<img width="975" height="92" alt="image" src="https://github.com/user-attachments/assets/74d0dc90-ffce-4c2e-943e-7a0bea60b449" />
+<img width="1562" height="181" alt="image" src="https://github.com/user-attachments/assets/47fb01b3-5b19-46df-901a-13c9ea2b0e10" />
 
-Sis'! (I guess Qwen is a she.) I wanted the whole thing.
+**Sis'! (I guess Qwen is a she.) I wanted the whole thing!**
 
 
 When I asked it to generate the code, it reasoned for roughly three hours at a whopping 0.70 token per second before the process stopped working.
