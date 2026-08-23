@@ -91,9 +91,10 @@ Venice is a privacy-focused AI platform founded in 2024 by Erik Voorhees. Its pi
 
 Let's go, then! I asked my question without even registering.
 
-<img width="975" height="181" alt="image" src="https://github.com/user-attachments/assets/d0bdaf4d-f9c5-4ea9-828c-646182d7a62c" />
+<img width="1561" height="321" alt="image" src="https://github.com/user-attachments/assets/a1b8b641-e28f-4e92-be4c-26fa4924d2b5" />
 
-<img width="952" height="266" alt="image" src="https://github.com/user-attachments/assets/ca733bb8-6840-4a5e-afca-f926ebc110e6" />
+<img width="1525" height="454" alt="image" src="https://github.com/user-attachments/assets/ee1e5000-edcc-48db-970e-b0add0c40b5a" />
+
 
 Not even a warning that what I was asking was sus'.
 
