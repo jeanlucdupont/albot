@@ -143,7 +143,8 @@ Then it asked whether I wanted it to implement some of the recommendations.
 
 When I asked it to generate the code, it reasoned for roughly three hours at a whopping 0.70 token per second before the process stopped working.
 
-<img width="975" height="368" alt="image" src="https://github.com/user-attachments/assets/6189249e-1848-4da8-abf0-e4654814859a" />
+<img width="1032" height="405" alt="image" src="https://github.com/user-attachments/assets/562877b7-98a7-4480-aed6-bf730974c288" />
+
 
   
 ## So, can AI vibe-code malware?
