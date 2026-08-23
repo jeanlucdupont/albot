@@ -164,6 +164,3 @@ My conclusions are more modest:
 We are not the point where **anyone** can press one button and receive polished, evasive malware that works everywhere.
 
 JL Dupont
-
-And that is already enough of a cybersecurity risk to take seriously.
-
