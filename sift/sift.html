@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Review security spreadsheets by cumulatively excluding rows you do not need.">
+  <title>Sift — Security report triage</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23101827'/%3E%3Cpath d='M7 8h18l-7 8v7l-4 2v-9z' fill='%235eead4'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Sift home"><span class="brand-mark">S</span><span>Sift</span></a>
+    <div class="privacy"><span></span>Local processing only</div>
+    <div class="top-actions">
+      <button class="button secondary" id="newFileBtn" type="button">Open file</button>
+      <button class="button primary" id="exportBtn" type="button">Export visible rows</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="workspace-head">
+      <div>
+        <p class="eyebrow">VULNERABILITY TRIAGE</p>
+        <h1 id="fileTitle">Sample vulnerability report</h1>
+        <p class="file-meta" id="fileMeta">12 rows · 7 columns · Sample data</p>
+      </div>
+      <label class="dropzone" id="dropzone">
+        <input id="fileInput" type="file" accept=".csv,.xls,.xlsx" hidden>
+        <span class="upload-icon" aria-hidden="true">↥</span>
+        <span><strong>Drop XLS, XLSX, or CSV</strong><small>or click to choose a file</small></span>
+      </label>
+    </section>
+
+    <section class="filter-panel" aria-label="Exclusion controls">
+      <details class="filter-disclosure" open>
+        <summary><span><strong id="filterTitle">Exclude rows</strong><small>Each new rule is added to the ones already active.</small></span><span class="disclosure-meta" id="activeRuleSummary">0 active</span></summary>
+        <div class="filter-section-actions"><button class="text-button" id="clearRulesBtn" type="button">Clear all</button></div>
+        <form class="filter-form" id="filterForm">
+        <label>Look in
+          <select id="columnSelect"></select>
+        </label>
+        <label>Where the value
+          <select id="operatorSelect">
+            <option value="contains">contains</option>
+            <option value="notcontains">does not contain</option>
+            <option value="equals">equals</option>
+            <option value="starts">starts with</option>
+            <option value="ends">ends with</option>
+            <option value="regex">matches regex</option>
+            <option value="empty">is empty</option>
+          </select>
+        </label>
+        <label class="value-field">Value
+          <input id="filterValue" type="text" placeholder="e.g. CVE-2012-2343" autocomplete="off">
+        </label>
+        <button class="button danger" type="submit">Exclude matches</button>
+        </form>
+        <div class="rule-strip" id="ruleStrip" aria-live="polite"></div>
+      </details>
+      <details class="filter-disclosure saved-disclosure">
+        <summary><span><strong>Saved exclusions</strong><small>Reuse a named set of rules.</small></span><span class="disclosure-meta" id="savedSetSummary">0 saved</span></summary>
+        <div class="saved-filters">
+        <label>Filter set
+          <select id="savedFilterSelect"><option value="">Choose a saved set…</option></select>
+        </label>
+        <input id="savedFilterName" type="text" placeholder="Name this filter set" aria-label="Filter set name">
+        <button class="button secondary compact" id="saveFiltersBtn" type="button">Save current</button>
+        <button class="text-button" id="deleteSavedBtn" type="button">Delete saved</button>
+        </div>
+      </details>
+    </section>
+
+    <section class="data-section">
+      <div class="data-toolbar">
+        <div class="sheet-tabs" id="sheetTabs" role="tablist" aria-label="Workbook sheets"></div>
+        <div class="table-actions">
+          <details class="column-manager" id="columnManager">
+            <summary>Columns</summary>
+            <div class="column-menu">
+              <div class="column-menu-head"><strong>Show and reorder</strong><button type="button" id="showAllColumns">Show all</button></div>
+              <div id="columnList"></div>
+            </div>
+          </details>
+          <div class="row-summary">
+            <strong id="visibleCount">0</strong> visible
+            <span>·</span>
+            <span><strong id="excludedCount">0</strong> excluded</span>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <div class="empty-state" id="emptyState" hidden>
+          <div>0</div><h3>No rows remain</h3><p>Remove a rule to bring matching rows back.</p>
+        </div>
+      </div>
+      <div class="table-footer">
+        <span id="footerSummary"></span>
+        <div class="page-controls">
+          <label class="page-size">Rows per page
+            <select id="pageSizeSelect">
+              <option value="25">25</option>
+              <option value="50" selected>50</option>
+              <option value="100">100</option>
+              <option value="250">250</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+          <div class="pagination">
+          <button class="icon-button" id="prevPage" type="button" aria-label="Previous page">←</button>
+          <span id="pageLabel">Page 1 of 1</span>
+          <button class="icon-button" id="nextPage" type="button" aria-label="Next page">→</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="xlsx.full.min.js"></script>
+  <script src="sift.js"></script>
+</body>
+</html>
