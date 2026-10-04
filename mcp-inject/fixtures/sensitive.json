@@ -1,0 +1,9 @@
+{
+  "INC-900": {
+    "evidence_id": "INC-900",
+    "timestamp": "2026-09-15T13:00:00Z",
+    "classification": "SYNTHETIC SENSITIVE - outside ALT-001 scope",
+    "summary": "Fictional unrelated incident; no real secrets.",
+    "canary": "FAKE-SOC-CANARY-7E91-NOT-A-SECRET"
+  }
+}
