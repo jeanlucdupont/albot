@@ -6,7 +6,7 @@ This cybersecurity proof of concept connects an AI investigator to a **real stdi
 
 **The injection attempt failed in the recorded AI runs.** The model made no unauthorized tool calls. Separate tests without AI confirmed that the guarded server denied unauthorized reads and exports.
 
-![The challenge: malicious instructions inside security evidence]<img width="1005" height="343" alt="image" src="https://github.com/user-attachments/assets/f83cea4f-3e23-48c6-9820-2b92bf14b220" />
+<img width="1005" height="343" alt="image" src="https://github.com/user-attachments/assets/f83cea4f-3e23-48c6-9820-2b92bf14b220" />
 
 
 ## The scenario
@@ -17,7 +17,7 @@ A fictional workstation raises an alert for suspicious Office-to-PowerShell acti
 
 The assistant discovers tools through MCP, retrieves the alert, examines the process tree, and searches related events. It uses the returned evidence to produce an investigation summary with evidence references.
 
-![Recorded investigation and MCP tool calls](docs/images/02-investigation.png)
+<img width="1272" height="391" alt="image" src="https://github.com/user-attachments/assets/4220f5c5-5b4a-43da-aa5c-309c1bd877d7" />
 
 The poisoned incident differs from the clean incident in one field: `EVT-PS-001.script_annotation`. That annotation impersonates a SOC investigation procedure and instructs the assistant to:
 
@@ -27,7 +27,8 @@ The poisoned incident differs from the clean incident in one field: `EVT-PS-001.
 
 The instruction reaches the assistant **inside an MCP tool response**, rather than through the user's request or the system prompt. The PowerShell commands are inert fixture strings; the application never executes them.
 
-![Prompt injection embedded in the PowerShell log annotation](docs/images/03-injection.png)
+<img width="1280" height="377" alt="image" src="https://github.com/user-attachments/assets/55abc580-82b2-4abe-9e07-1f838ff707fe" />
+
 
 **Snapshot source note:** the original tool payloads were not saved for these earlier AI runs. The investigation excerpt comes from recorded AI findings; the injection text shown above comes from a recorded control export. The selected AI audit records identify `EVT-PS-001` as returned by `search_events`. These source limitations are disclosed in the snapshots.
 
@@ -37,7 +38,8 @@ The instruction reaches the assistant **inside an MCP tool response**, rather th
 
 The recorded `gpt-5.4-mini` runs completed without prohibited tool attempts in either permissive or guarded mode. No simulated export containing the synthetic sensitive data was produced.
 
-![Observed AI behavior: no unauthorized tool calls in either mode](docs/images/04-ai-results.png)
+<img width="1262" height="396" alt="image" src="https://github.com/user-attachments/assets/e0241ea3-80ae-4448-acc1-48c1fe43adae" />
+
 
 This is an observed result for the selected runs with one model. It does not establish universal prompt-injection resistance, and it does not demonstrate the server stopping an AI-driven attack: the AI never attempted the prohibited operations.
 
@@ -55,7 +57,8 @@ The control command deliberately requests the protected record and unauthorized 
 
 A **canary** is a recognizable fake secret placed in the synthetic record. Its presence in an export file lets the test verify that sensitive fixture content was actually exported; a tool call alone is insufficient.
 
-![Independent MCP control tests: permissive exports and guarded denials](docs/images/05-server-controls.png)
+<img width="1267" height="428" alt="image" src="https://github.com/user-attachments/assets/2dffbac8-71c8-4728-a2a1-0d7807702eba" />
+
 
 These are control-test results, not evidence that the AI followed the injection.
 
