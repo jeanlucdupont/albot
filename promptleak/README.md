@@ -1,6 +1,6 @@
 # PromptLeak
 
-<img width="909" height="633" alt="image" src="https://github.com/user-attachments/assets/5a7e5965-5f52-445c-94ff-04e9c4934531" />
+<img width="1161" height="711" alt="image" src="https://github.com/user-attachments/assets/35ceb007-a6eb-4fa7-a83e-884b2db42d91" />
 
 A small Python proof of concept to test system prompt extraction and compare five ways of protecting an LLM application.
 
