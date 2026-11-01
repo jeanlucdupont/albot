@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Prompt Library for AI Chats
 // @namespace    https://github.com/browser-tweaks
-// @version      1.0.0
+// @version      1.1.1
 // @description  Manage reusable prompts locally and insert them into AI chat composers.
 // @match        https://chatgpt.com/*
 // @match        https://chat.openai.com/*
@@ -37,13 +37,17 @@
   catch (err) { console.warn('Prompt Library: storage could not be parsed',err); prompts = []; }
   const save = () => GM_setValue(KEY, JSON.stringify(prompts));
   const host = document.createElement('div'); host.id = 'vm-prompt-library';
+  host.style.setProperty('position', 'fixed', 'important');
+  host.style.setProperty('inset', '0', 'important');
+  host.style.setProperty('z-index', '2147483646', 'important');
+  host.style.setProperty('pointer-events', 'none', 'important');
   const shadow = host.attachShadow({mode:'open'});
   shadow.innerHTML = `
     <style>
-      :host{all:initial;font:14px system-ui,sans-serif;color:#222}
+      :host{font:14px system-ui,sans-serif;color:#222;pointer-events:none}
       *{box-sizing:border-box} button,input,textarea{font:inherit}
-      #launcher{position:fixed;right:18px;bottom:62px;z-index:2147482001;background:#243b53;color:#fff;border:0;border-radius:18px;padding:9px 13px;cursor:pointer;box-shadow:0 2px 9px #0004}
-      #panel{position:fixed;right:18px;bottom:108px;width:min(430px,calc(100vw - 36px));max-height:min(75vh,700px);display:none;flex-direction:column;z-index:2147482002;background:#fff;color:#222;border:1px solid #aab;border-radius:12px;box-shadow:0 8px 32px #0005;overflow:hidden}
+      #launcher{position:absolute;left:66px;bottom:66px;pointer-events:auto;z-index:2;background:#243b53;color:#fff;border:0;border-radius:18px;padding:9px 13px;cursor:pointer;box-shadow:0 2px 9px #0004}
+      #panel{position:absolute;left:66px;bottom:112px;width:min(430px,calc(100vw - 82px));max-height:min(70vh,700px);pointer-events:auto;display:none;flex-direction:column;z-index:2147482002;background:#fff;color:#222;border:1px solid #aab;border-radius:12px;box-shadow:0 8px 32px #0005;overflow:hidden}
       #panel.open{display:flex}header{background:#243b53;color:#fff;padding:12px;display:flex;justify-content:space-between;align-items:center}
       #main{padding:12px;overflow:auto;display:grid;gap:9px}input,textarea{width:100%;padding:9px;border:1px solid #aab;border-radius:5px;background:#fff;color:#222}textarea{min-height:95px;resize:vertical}
       button{cursor:pointer;border:1px solid #bdc5ce;background:#f4f6f8;color:#222;border-radius:5px;padding:6px 9px}button:hover{background:#e5edf4}
@@ -161,6 +165,35 @@
       prompts=imported;save();render();notify('Imported prompts; previous library replaced.');
     } catch(err) { notify(`Import failed: ${safeString(err.message)}`); }
   });
-  const mount=()=>{ if(document.body)document.body.append(host); };
-  if(document.body) mount(); else document.addEventListener('DOMContentLoaded',mount,{once:true});
+  // ChatGPT may replace the body contents after the userscript mounts.
+  // Observe actual body children, not only changes to <html>.
+  let watchedBody = null;
+  const observer = new MutationObserver(() => {
+    if (!document.body) return;
+    if (host.parentElement !== document.body) mount();
+    if (watchedBody !== document.body) watchBody();
+  });
+
+  function mount() {
+    if (!document.body) return;
+    if (host.parentElement !== document.body) document.body.append(host);
+  }
+
+  function watchBody() {
+    if (!document.documentElement) return;
+    observer.disconnect();
+    observer.observe(document.documentElement, { childList: true });
+    watchedBody = document.body;
+    if (watchedBody) observer.observe(watchedBody, { childList: true });
+  }
+
+  function start() {
+    mount();
+    watchBody();
+  }
+
+  if (document.body) start();
+  else document.addEventListener('DOMContentLoaded', start, { once: true });
+
+  console.info('[Prompt Library] v1.1.1 initialized on', location.hostname);
 })();
