@@ -123,7 +123,7 @@
         .label {
           position: absolute;
           right: 8px;
-          bottom: 10px;
+          top: 60px;
           padding: 4px 8px;
           border-radius: 6px;
           background: ${settings.accent};
