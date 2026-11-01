@@ -109,7 +109,7 @@
 
         .edge {
           position: absolute;
-          top: 0;
+          top: 50px;
           bottom: 0;
           width: ${EDGE_WIDTH_PX}px;
           background: ${settings.accent};
