@@ -3,7 +3,6 @@
 Keyboard navigation for ChatGPT conversation turns. Avoids replacing normal Up/Down scrolling.
 
 
-**Version:** 1.1.0  
 **Supported hosts:** `chatgpt.com`, `chat.openai.com`
 
 ## Controls
