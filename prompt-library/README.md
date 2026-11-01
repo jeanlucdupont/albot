@@ -2,12 +2,10 @@
 
 Store reusable prompts locally and insert or copy them when composing messages to AI assistants.
 
-**File:** [`Prompt-Library.user.js`](Prompt-Library.user.js)  
-**Version:** 1.0.0  
-**Supported sites:** ChatGPT (tested), Claude, Gemini, Microsoft Copilot, DeepSeek, and Perplexity (hosts listed in userscript metadata).
 
 <img width="463" height="392" alt="image" src="https://github.com/user-attachments/assets/165279d7-d046-4dfb-bfd2-95136d1d6857" />
 
+**Supported sites:** ChatGPT (tested), Claude, Gemini, Microsoft Copilot, DeepSeek, and Perplexity (hosts listed in userscript metadata).
 
 ## How to use
 
