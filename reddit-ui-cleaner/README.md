@@ -2,8 +2,7 @@
 
 Hide Reddit's persistent account-ban notice and **Games on Reddit** sidebar section.
 
-**File:** [`Reddit-UI-Cleaner.user.js`](Reddit-UI-Cleaner.user.js)  
-**Version:** 1.2.0  
+
 **Supported hosts:** `www.reddit.com`, `sh.reddit.com`, `new.reddit.com`
 
 ## Behavior
