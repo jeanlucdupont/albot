@@ -2,8 +2,9 @@
 
 Identify the current AI chat website at a glance using a distinctive accent color.
 
-**File:** [`LLM-Color-Identity.user.js`](LLM-Color-Identity.user.js)  
-**Version:** 1.0.0
+
+<img width="879" height="232" alt="image" src="https://github.com/user-attachments/assets/7ba6f1c3-0686-4fc5-b34f-56e8e8c8392c" />
+
 
 ## Supported sites and default colors
 
