@@ -20,22 +20,22 @@
 
   const CONFIG = {
     'chatgpt.com': {
-      name: 'ChatGPT', accent: '#ae4444'
+      name: 'ChatGPT', accent: '#0F9E7B'
     },
     'chat.openai.com': {
       name: 'ChatGPT', accent: '#ae4444'
     },
     'claude.ai': {
-      name: 'Claude', accent: '#ad762f'
+      name: 'Claude', accent: '#D57755'
     },
     'gemini.google.com': {
-      name: 'Gemini', accent: '#4778c6'
+      name: 'Gemini', accent: '#F7B80F'
     },
     'copilot.microsoft.com': {
       name: 'Copilot', accent: '#7964bb'
     },
 'chat.deepseek.com': {
-  name: 'DeepSeek', accent: '#9333ea'
+  name: 'DeepSeek', accent: '#3964FE'
 },
     'www.perplexity.ai': {
       name: 'Perplexity', accent: '#288f85'
