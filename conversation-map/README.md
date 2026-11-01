@@ -6,6 +6,10 @@ An on-page searchable outline of conversation turns, with quick jumping and user
 **Version:** 1.0.0  
 **Supported hosts:** `chatgpt.com`, `chat.openai.com`
 
+<img width="413" height="792" alt="image" src="https://github.com/user-attachments/assets/ce9329e6-a5a0-4d1f-90ca-d605e88a05a9" />
+
+
+
 ## How to use
 
 1. Install the raw `.user.js` file using Violentmonkey and refresh ChatGPT.
