@@ -3,7 +3,8 @@
 Store reusable prompts locally and insert or copy them when composing messages to AI assistants.
 
 
-<img width="463" height="392" alt="image" src="https://github.com/user-attachments/assets/165279d7-d046-4dfb-bfd2-95136d1d6857" />
+<img width="418" height="198" alt="image" src="https://github.com/user-attachments/assets/c4a7489d-fbfc-41dc-87ba-da62b98b8f7d" />
+
 
 **Supported sites:** ChatGPT (tested), Claude, Gemini, Microsoft Copilot, DeepSeek, and Perplexity (hosts listed in userscript metadata).
 
