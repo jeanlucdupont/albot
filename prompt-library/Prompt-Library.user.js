@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Prompt Library for AI Chats
 // @namespace    https://github.com/browser-tweaks
-// @version      1.1.1
+// @version      1.2.1
 // @description  Manage reusable prompts locally and insert them into AI chat composers.
 // @match        https://chatgpt.com/*
 // @match        https://chat.openai.com/*
@@ -44,25 +44,59 @@
   const shadow = host.attachShadow({mode:'open'});
   shadow.innerHTML = `
     <style>
-      :host{font:14px system-ui,sans-serif;color:#222;pointer-events:none}
-      *{box-sizing:border-box} button,input,textarea{font:inherit}
-      #launcher{position:absolute;left:66px;bottom:66px;pointer-events:auto;z-index:2;background:#243b53;color:#fff;border:0;border-radius:18px;padding:9px 13px;cursor:pointer;box-shadow:0 2px 9px #0004}
-      #panel{position:absolute;left:66px;bottom:112px;width:min(430px,calc(100vw - 82px));max-height:min(70vh,700px);pointer-events:auto;display:none;flex-direction:column;z-index:2147482002;background:#fff;color:#222;border:1px solid #aab;border-radius:12px;box-shadow:0 8px 32px #0005;overflow:hidden}
-      #panel.open{display:flex}header{background:#243b53;color:#fff;padding:12px;display:flex;justify-content:space-between;align-items:center}
-      #main{padding:12px;overflow:auto;display:grid;gap:9px}input,textarea{width:100%;padding:9px;border:1px solid #aab;border-radius:5px;background:#fff;color:#222}textarea{min-height:95px;resize:vertical}
-      button{cursor:pointer;border:1px solid #bdc5ce;background:#f4f6f8;color:#222;border-radius:5px;padding:6px 9px}button:hover{background:#e5edf4}
-      header button{background:#fff;color:#222}.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.entry{border:1px solid #ddd;border-radius:7px;padding:9px;display:grid;gap:6px}.entry strong{overflow-wrap:anywhere}.preview{white-space:pre-wrap;max-height:54px;overflow:hidden;color:#555;font-size:12px}
-      #editor{display:none;gap:7px;border-top:1px solid #ddd;padding-top:10px}#editor.open{display:grid}#notice{font-size:12px;color:#576575}#file{display:none}
+      :host{font:12px system-ui,sans-serif;color:#222;pointer-events:none}
+      *{box-sizing:border-box}button,input,textarea{font:inherit}
+      #launcher{position:absolute;left:8px;bottom:112px;pointer-events:auto;z-index:2;
+        width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+        background:#243b53;color:white;border:0;border-radius:999px;padding:0;
+        font-weight:700;font-size:16px;line-height:1;cursor:pointer;
+        box-shadow:0 2px 8px #0004}
+      #launcher:hover{transform:translateY(-1px)}
+      #panel{position:absolute;left:48px;bottom:98px;width:min(375px,calc(100vw - 58px));
+        max-height:min(70vh,650px);pointer-events:auto;display:none;flex-direction:column;
+        z-index:2147482002;background:#fff;color:#222;border:1px solid #aab;
+        border-radius:8px;box-shadow:0 6px 22px #0005;overflow:hidden}
+      #panel.open{display:flex}
+      header{background:#243b53;color:#fff;padding:5px 8px;min-height:29px;
+        display:flex;justify-content:space-between;align-items:center}
+      header strong{font-size:12px}
+      #main{padding:7px;overflow:auto;display:grid;gap:5px}
+      input,textarea{width:100%;padding:5px 7px;border:1px solid #aab;
+        border-radius:4px;background:#fff;color:#222}
+      #search{height:27px}
+      textarea{min-height:90px;resize:vertical}
+      button{cursor:pointer;border:1px solid #bdc5ce;background:#f4f6f8;color:#222;
+        border-radius:4px;padding:3px 6px;min-height:23px;line-height:1.15;white-space:nowrap}
+      button:hover{background:#e5edf4}
+      header button{background:#fff;color:#222;min-height:20px;padding:1px 6px}
+      .row{display:flex;gap:4px;align-items:center;flex-wrap:nowrap}
+      #entries{display:grid;gap:2px}
+      .entry{border:1px solid #e1e4e8;border-radius:4px;padding:3px 4px;
+        display:flex;gap:5px;align-items:center;min-height:29px}
+      .entry:hover{background:#f7f9fb}
+      .entry strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+        white-space:nowrap;font-size:12px;cursor:help}
+      .entry .row{flex-shrink:0;gap:3px}
+      .entry button{padding:2px 5px;min-height:21px;font-size:11px}
+      .entry button.delete{width:21px;padding:2px 0}
+      #editor{display:none;gap:5px;border-top:1px solid #ddd;padding-top:6px}
+      #editor.open{display:grid}
+      #notice{font-size:11px;color:#576575}
+      #notice:empty{display:none}
+      #file{display:none}
+      @media(max-width:420px){#launcher{left:6px;bottom:104px;width:32px;height:32px;font-size:15px}
+        #panel{left:42px;bottom:92px;width:calc(100vw - 50px)}
+        .entry button{padding:2px 4px}}
     </style>
-    <button id="launcher" type="button" title="Prompt Library (Alt+Shift+P)">Prompts</button>
+    <button id="launcher" type="button" title="Prompt Library (Alt+Shift+P)" aria-label="Prompt Library">P</button>
     <section id="panel" role="dialog" aria-label="Prompt Library" aria-modal="false">
       <header><strong>Prompt Library</strong><button id="close" type="button" aria-label="Close">✕</button></header>
       <div id="main">
         <input id="search" type="search" placeholder="Search saved prompts" aria-label="Search prompts">
-        <div class="row"><button id="new" type="button">New prompt</button><button id="export" type="button">Export JSON</button><button id="import" type="button">Import JSON</button><input id="file" type="file" accept="application/json,.json"></div>
+        <div class="row"><button id="new" type="button">+ New</button><button id="export" type="button">Export</button><button id="import" type="button">Import</button><input id="file" type="file" accept="application/json,.json"></div>
         <div id="entries"></div>
         <div id="editor"><input id="title" maxlength="100" placeholder="Prompt title" aria-label="Prompt title"><textarea id="body" maxlength="20000" placeholder="Prompt text" aria-label="Prompt text"></textarea><div class="row"><button id="save" type="button">Save</button><button id="cancel" type="button">Cancel</button></div></div>
-        <div id="notice" role="status">Local storage only. Inserting never submits a prompt.</div>
+        <div id="notice" role="status"></div>
       </div>
     </section>`;
   const $ = id => shadow.getElementById(id);
@@ -138,15 +172,15 @@
     for (const p of list) {
       const item=document.createElement('div'); item.className='entry';
       const title=document.createElement('strong'); title.textContent=p.title;
-      const preview=document.createElement('div'); preview.className='preview'; preview.textContent=p.body;
+      title.title=p.body; // Native hover tooltip shows the complete prompt.
       const actions=document.createElement('div'); actions.className='row';
       for (const [label,cb] of [
         ['Insert',()=>{const body=p.body;closePanel();insert(body);}],
         ['Copy',()=>{GM_setClipboard(p.body);notify('Copied to clipboard.');}],
         ['Edit',()=>edit(p)],
-        ['Delete',()=>{if(confirm(`Delete prompt "${p.title}"?`)){prompts=prompts.filter(x=>x.id!==p.id);save();render();}}],
-      ]) { const btn=document.createElement('button');btn.type='button';btn.textContent=label;btn.addEventListener('click',cb);actions.append(btn); }
-      item.append(title,preview,actions);$('entries').append(item);
+        ['×',()=>{if(confirm(`Delete prompt "${p.title}"?`)){prompts=prompts.filter(x=>x.id!==p.id);save();render();}}],
+      ]) { const btn=document.createElement('button');btn.type='button';btn.textContent=label;if(label==='×'){btn.className='delete';btn.title='Delete prompt';btn.setAttribute('aria-label','Delete '+p.title);}btn.addEventListener('click',cb);actions.append(btn); }
+      item.append(title,actions);$('entries').append(item);
     }
   }
   $('search').addEventListener('input',render);
@@ -195,5 +229,5 @@
   if (document.body) start();
   else document.addEventListener('DOMContentLoaded', start, { once: true });
 
-  console.info('[Prompt Library] v1.1.1 initialized on', location.hostname);
+  console.info('[Prompt Library] v1.2.1 initialized on', location.hostname);
 })();
