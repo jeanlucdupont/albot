@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Prompt Library for AI Chats
 // @namespace    https://github.com/browser-tweaks
-// @version      1.2.1
+// @version      1.2.2
 // @description  Manage reusable prompts locally and insert them into AI chat composers.
 // @match        https://chatgpt.com/*
 // @match        https://chat.openai.com/*
@@ -46,10 +46,10 @@
     <style>
       :host{font:12px system-ui,sans-serif;color:#222;pointer-events:none}
       *{box-sizing:border-box}button,input,textarea{font:inherit}
-      #launcher{position:absolute;left:8px;bottom:112px;pointer-events:auto;z-index:2;
-        width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+      #launcher{position:absolute;left:13px;bottom:117px;pointer-events:auto;z-index:2;
+        width:24px;height:24px;display:flex;align-items:center;justify-content:center;
         background:#243b53;color:white;border:0;border-radius:999px;padding:0;
-        font-weight:700;font-size:16px;line-height:1;cursor:pointer;
+        font-weight:700;font-size:12px;line-height:1;cursor:pointer;
         box-shadow:0 2px 8px #0004}
       #launcher:hover{transform:translateY(-1px)}
       #panel{position:absolute;left:48px;bottom:98px;width:min(375px,calc(100vw - 58px));
@@ -84,7 +84,7 @@
       #notice{font-size:11px;color:#576575}
       #notice:empty{display:none}
       #file{display:none}
-      @media(max-width:420px){#launcher{left:6px;bottom:104px;width:32px;height:32px;font-size:15px}
+      @media(max-width:420px){#launcher{left:10px;bottom:108px;width:24px;height:24px;font-size:12px}
         #panel{left:42px;bottom:92px;width:calc(100vw - 50px)}
         .entry button{padding:2px 4px}}
     </style>
@@ -229,5 +229,5 @@
   if (document.body) start();
   else document.addEventListener('DOMContentLoaded', start, { once: true });
 
-  console.info('[Prompt Library] v1.2.1 initialized on', location.hostname);
+  console.info('[Prompt Library] v1.2.2 initialized on', location.hostname);
 })();
